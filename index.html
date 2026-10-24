@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#100d24">
+  <title>Neonslange — et fargerikt slangspill</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background: #100d24;
+      color: #fff;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      --muted: #aaa4c7;
+      --pink: #ff5caa;
+      --cyan: #59f4e2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 50% 10%, #30205b 0%, transparent 52%),
+        radial-gradient(ellipse at 5% 85%, #1d1643 0%, transparent 45%),
+        #100d24;
+    }
+
+    .game {
+      width: min(100% - 32px, 720px);
+      padding: 32px 0;
+    }
+
+    .heading { text-align: center; margin-bottom: 22px; }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(36px, 8vw, 58px);
+      font-weight: 900;
+      letter-spacing: -.065em;
+      line-height: 1;
+      background: linear-gradient(100deg, #fff 10%, #ff8dc7 48%, #72fff0 92%);
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      margin: 11px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .scoreboard {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .score-card {
+      min-width: 126px;
+      padding: 10px 18px 11px;
+      border: 1px solid #ffffff17;
+      border-radius: 14px;
+      background: #ffffff08;
+      text-align: center;
+    }
+
+    .score-label {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .score-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+
+    .game-message {
+      min-height: 24px;
+      margin: -3px 0 9px;
+      color: #ffd986;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .board-shell {
+      padding: 8px;
+      border: 1px solid #a18bff33;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #8661ff44, #ff60c422 48%, #50f5df22);
+      box-shadow: 0 18px 70px #0007, 0 0 42px #aa6dff12;
+    }
+
+    .board {
+      position: relative;
+      overflow: hidden;
+      border-radius: 13px;
+      background: #111328;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      padding: 24px;
+      background: #100d24b8;
+      text-align: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .overlay[hidden] { display: none; }
+
+    .overlay h2 {
+      margin: 0;
+      font-size: clamp(24px, 6vw, 38px);
+      font-weight: 900;
+      letter-spacing: -.04em;
+    }
+
+    .overlay p {
+      max-width: 330px;
+      margin: 9px 0 20px;
+      color: #c2bdd8;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button {
+      border: 0;
+      color: #100d24;
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .primary-button {
+      min-height: 46px;
+      padding: 0 24px;
+      border-radius: 14px;
+      background: linear-gradient(105deg, #ff79bb, #ffcd72 55%, #82ffe8);
+      box-shadow: 0 6px 25px #ff79bb35;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .primary-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px #ff79bb50;
+    }
+
+    button:focus-visible {
+      outline: 3px solid white;
+      outline-offset: 4px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 15px;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .hint strong { color: #e8e3ff; }
+
+    .pause-button {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 0 15px;
+      border: 1px solid #ffffff25;
+      border-radius: 11px;
+      background: #ffffff0d;
+      color: #f2efff;
+      font-size: 12px;
+      transition: background .15s ease;
+    }
+
+    .pause-button:hover { background: #ffffff1a; }
+    .pause-button:disabled { cursor: default; opacity: .45; }
+
+    .control-buttons {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 8px;
+    }
+
+    .pad {
+      display: none;
+      grid-template: repeat(2, 44px) / repeat(3, 52px);
+      justify-content: center;
+      gap: 5px;
+      margin: 17px auto 0;
+      user-select: none;
+    }
+
+    .pad button {
+      border: 1px solid #ffffff20;
+      border-radius: 12px;
+      background: #ffffff0c;
+      color: #f4eaff;
+      font-size: 19px;
+      touch-action: manipulation;
+    }
+
+    .pad button:active { background: #bd73ff55; }
+    .pad-up { grid-area: 1 / 2; }
+    .pad-left { grid-area: 2 / 1; }
+    .pad-down { grid-area: 2 / 2; }
+    .pad-right { grid-area: 2 / 3; }
+
+    @media (pointer: coarse), (max-width: 560px) {
+      .pad { display: grid; }
+      .game { padding: 22px 0; }
+      .heading { margin-bottom: 17px; }
+      .score-card { min-width: 110px; }
+    }
+
+    @media (max-width: 400px) {
+      .game { width: min(100% - 20px, 720px); }
+      .controls { align-items: flex-start; flex-wrap: wrap; }
+      .hint { width: 100%; text-align: center; }
+      .control-buttons { width: 100%; justify-content: center; gap: 5px; }
+      .hint { font-size: 11px; }
+      .pause-button { padding: 0 8px; font-size: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <header class="heading">
+      <p class="eyebrow">Et lite spill med stor appetitt</p>
+      <h1>Neonslange</h1>
+      <p class="subtitle">Spis deg lang. Ikke spis deg selv. Følg rytmen!</p>
+    </header>
+
+    <section class="scoreboard" aria-label="Poengoversikt">
+      <div class="score-card">
+        <span class="score-label">Poeng</span>
+        <span class="score-value" id="score">0</span>
+      </div>
+      <div class="score-card">
+        <span class="score-label">Rekord</span>
+        <span class="score-value" id="best">0</span>
+      </div>
+    </section>
+    <p class="game-message" id="game-message" aria-live="polite"></p>
+
+    <div class="board-shell">
+      <div class="board">
+        <canvas id="game-canvas" width="640" height="480" aria-label="Slangespill"></canvas>
+        <div class="overlay" id="overlay" aria-live="polite">
+          <h2 id="overlay-title">Klar for neon?</h2>
+          <p id="overlay-message">Samle de glødende godbitene, voks deg lang, og pass på halen!</p>
+          <button class="primary-button" id="start-button" type="button">Start spillet</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <p class="hint"><strong>Piltaster</strong> eller <strong>WASD</strong> for å styre<br><strong>Space</strong> for pause</p>
+      <div class="control-buttons">
+        <button class="pause-button" id="music-button" type="button" aria-pressed="true" title="Den originale chiptune-melodien starter når spillet begynner">♫ Musikk: på</button>
+        <button class="pause-button" id="track-button" type="button" title="Bytt chiptune-låt">Låt 1/8</button>
+        <button class="pause-button" id="pause-button" type="button" disabled>Pause</button>
+      </div>
+    </div>
+
+    <div class="pad" aria-label="Berøringskontroller">
+      <button class="pad-up" data-direction="up" type="button" aria-label="Opp">▲</button>
+      <button class="pad-left" data-direction="left" type="button" aria-label="Venstre">◀</button>
+      <button class="pad-down" data-direction="down" type="button" aria-label="Ned">▼</button>
+      <button class="pad-right" data-direction="right" type="button" aria-label="Høyre">▶</button>
+    </div>
+  </main>
+
+  <script>
+    const canvas = document.querySelector("#game-canvas");
+    const ctx = canvas.getContext("2d");
+    const scoreDisplay = document.querySelector("#score");
+    const bestDisplay = document.querySelector("#best");
+    const gameMessage = document.querySelector("#game-message");
+    const overlay = document.querySelector("#overlay");
+    const overlayTitle = document.querySelector("#overlay-title");
+    const overlayMessage = document.querySelector("#overlay-message");
+    const startButton = document.querySelector("#start-button");
+    const pauseButton = document.querySelector("#pause-button");
+    const musicButton = document.querySelector("#music-button");
+    const trackButton = document.querySelector("#track-button");
+
+    const cell = 32;
+    const columns = canvas.width / cell;
+    const rows = canvas.height / cell;
+    const directions = {
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 },
+    };
+    const keyDirections = {
+      ArrowUp: "up", w: "up", W: "up",
+      ArrowDown: "down", s: "down", S: "down",
+      ArrowLeft: "left", a: "left", A: "left",
+      ArrowRight: "right", d: "right", D: "right",
+    };
+
+    let snake;
+    let direction;
+    let nextDirection;
+    let food;
+    let score = 0;
+    let best = loadBest();
+    let state = "ready";
+    let lastStep = 0;
+    let stepDuration = 145;
+    let activeGameTime = 0;
+    let lastFrameTime = 0;
+    let bonusFruit = null;
+    let foodsUntilBonus = 2 + Math.floor(Math.random() * 3);
+    let speedEffect = null;
+    let lastEffectSecond = -1;
+    let obstacles = [];
+    let explosions = [];
+    let nextObstacleAt = 9000;
+    let portalState = "closed";
+    let portalStateAt = 0;
+    let portalOpenUntil = 0;
+    let nextPortalAt = 8000;
+    let portalTransit = false;
+    let portalEndpoints = [];
+    let pingPongBalls = [];
+    let nextPingPongBallAt = 6500;
+    let arcadeVisitor = null;
+    let nextVisitorAt = 14000;
+    let touchStart = null;
+    let musicEnabled = true;
+    let audioContext = null;
+    let masterGain = null;
+    let noiseBuffer = null;
+    let musicTimer = null;
+    let musicStep = 0;
+    let musicBar = 0;
+    let nextNoteTime = 0;
+    let currentSongIndex = -1;
+
+    const harmony = [
+      { bass: 40, chord: [52, 55, 59] },
+      { bass: 36, chord: [48, 52, 55] },
+      { bass: 43, chord: [55, 59, 62] },
+      { bass: 38, chord: [50, 54, 57] },
+    ];
+    const songs = [
+      { name: "Neon Sprint", bpm: 144, transpose: 0, bassShift: -12, leadWave: "square", bassWave: "triangle", arpWave: "square", leadDuration: 0.105, leadVolume: 0.085, arpPattern: [0, 1, 2, 1, 2, 1, 0, 1], bassPattern: [0, 7, 12, 7], melody: [76, null, 79, 81, null, 84, 81, null, 79, null, 76, 79, null, 81, 79, null, 81, null, 84, 86, 84, null, 81, null, 79, 81, null, 84, 81, 79, 76, null, 84, null, 81, 79, null, 76, 79, null, 81, null, 84, 81, 79, null, 76, 79, 76, 79, null, 81, 84, null, 81, 79, 76, null, 79, 81, null, 76, 74, 72], chords: [0, 1, 2, 3], drums: [false, false, true, false, true, false, true, true, true, true, true, true, true, true, true, true], drumStyle: 0 },
+      { name: "Pixel Racer", bpm: 158, transpose: 2, bassShift: -10, leadWave: "sawtooth", bassWave: "square", arpWave: "sawtooth", leadDuration: 0.075, leadVolume: 0.065, arpPattern: [0, 2, 1, 2, 0, 2, 1, 2], bassPattern: [0, 0, 7, 0], melody: [86, 84, 81, 84, 86, null, 88, 86, 84, 81, 79, 81, 84, null, 81, null, 86, 88, 91, 88, 86, 84, 81, null, 79, 81, 84, 81, 79, 76, 79, null, 88, 86, 84, 81, 84, 86, 88, null, 91, 88, 86, 84, 81, null, 84, null, 86, 84, 81, 79, 81, 84, 86, null, 88, 86, 84, 81, 79, 81, 76, null], chords: [1, 3, 0, 2], drums: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true], drumStyle: 1 },
+      { name: "Moonbase 8-bit", bpm: 122, transpose: -2, bassShift: -12, leadWave: "triangle", bassWave: "sine", arpWave: "sine", leadDuration: 0.22, leadVolume: 0.09, arpPattern: [0, 2, 1, 0, 2, 1, 0, 1], bassPattern: [0, null, 7, null], melody: [72, null, null, 79, null, 84, null, null, 81, null, null, 79, null, 76, null, null, 74, null, null, 81, null, 86, 84, null, 81, null, null, 79, null, 76, null, null, 72, null, 76, null, null, 79, null, 84, 81, null, null, null, 79, null, 76, null, 74, null, null, 78, null, 81, null, 86, 84, null, 81, null, 78, null, 74, null], chords: [0, 3, 1, 2], drums: [false, false, false, true, false, false, true, false, true, false, false, true, false, true, false, true], drumStyle: 2 },
+      { name: "Turbo Tangerine", bpm: 168, transpose: 5, bassShift: -7, leadWave: "square", bassWave: "sawtooth", arpWave: "square", leadDuration: 0.06, leadVolume: 0.07, arpPattern: [2, 1, 0, 1, 2, 1, 0, 2], bassPattern: [0, 12, 7, 12], melody: [79, 81, 84, 86, 84, 81, 79, 76, 79, 81, 84, null, 86, 84, 81, null, 84, 86, 88, 86, 84, 81, 84, 79, 81, 84, 86, null, 88, 86, 84, null, 79, 84, 88, 84, 81, 86, 84, 81, 79, 84, 86, 81, 76, 81, 84, 79, 84, 88, 91, 88, 86, 84, 81, 84, 79, 81, 84, 86, 84, 81, 79, null], chords: [2, 0, 3, 1], drums: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true], drumStyle: 3 },
+      { name: "Crystal Cavern", bpm: 128, transpose: -5, bassShift: -12, leadWave: "sine", bassWave: "triangle", arpWave: "triangle", leadDuration: 0.28, leadVolume: 0.1, arpPattern: [0, 2, 1, 2, 0, 1, 2, 1], bassPattern: [0, null, 12, 7], melody: [79, null, null, null, 86, null, null, 84, null, null, 81, null, null, null, 78, null, 76, null, null, 79, null, null, 84, null, 81, null, null, null, 79, null, null, null, 74, null, null, null, 81, null, 79, null, null, null, 86, null, null, 81, null, null, 79, null, null, 84, null, 81, null, null, 76, null, null, 79, null, null, null, 72], chords: [3, 2, 0, 1], drums: [false, false, true, false, false, true, false, false, true, false, true, false, false, true, false, true], drumStyle: 2 },
+      { name: "Laser Lagoon", bpm: 146, transpose: 3, bassShift: -10, leadWave: "sawtooth", bassWave: "triangle", arpWave: "sine", leadDuration: 0.13, leadVolume: 0.075, arpPattern: [0, 1, 2, 0, 2, 1, 2, 1], bassPattern: [0, 5, 12, 7], melody: [84, null, 88, null, 91, null, 88, 86, null, 84, null, 81, null, 84, 86, null, 88, null, 91, null, 93, 91, null, 88, 86, null, 84, null, 81, null, 84, null, 81, null, 84, 88, null, 91, null, 88, 86, null, 88, null, 91, 93, null, 91, 88, null, 86, null, 84, 81, null, 84, 86, null, 88, null, 84, null, 81, null], chords: [0, 2, 1, 3], drums: [false, true, false, true, true, false, true, false, true, true, true, true, false, true, true, true], drumStyle: 1 },
+      { name: "Robot Rumble", bpm: 152, transpose: -3, bassShift: -7, leadWave: "square", bassWave: "sawtooth", arpWave: "square", leadDuration: 0.09, leadVolume: 0.09, arpPattern: [0, 2, 0, 1, 2, 0, 1, 2], bassPattern: [0, 0, 5, 7], melody: [83, null, 83, 86, null, 83, 81, null, 78, null, 81, 83, null, 86, 81, null, 86, 83, null, 81, 83, null, 88, 86, 83, null, 81, 78, null, 81, 83, null, 78, null, 81, 83, 86, null, 83, 81, 78, 81, null, 86, 83, null, 81, 78, 83, null, 86, 88, null, 86, 83, null, 81, 83, null, 78, 81, 83, null, 76], chords: [1, 0, 2, 3], drums: [true, false, true, true, true, false, true, true, true, true, false, true, true, false, true, true], drumStyle: 3 },
+      { name: "Starlight Run", bpm: 136, transpose: 7, bassShift: -5, leadWave: "triangle", bassWave: "sine", arpWave: "triangle", leadDuration: 0.18, leadVolume: 0.085, arpPattern: [2, 1, 0, 1, 2, 1, 0, 1], bassPattern: [0, 7, 5, 12], melody: [72, null, 79, null, 84, null, 86, 84, null, 91, null, 88, 84, null, 79, null, 76, null, 83, null, 88, null, 91, 88, null, 95, null, 91, 88, null, 83, null, 79, null, 86, null, 91, null, 93, 91, null, 98, null, 95, 91, null, 86, null, 84, null, 91, null, 95, null, 98, 95, null, 103, null, 98, 95, null, 91, null], chords: [2, 1, 3, 0], drums: [false, false, true, false, true, false, true, false, true, false, true, true, true, true, true, true], drumStyle: 0 },
+    ];
+
+    bestDisplay.textContent = best;
+
+    function loadBest() {
+      try {
+        return Number(localStorage.getItem("neonslange-best")) || 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function saveBest() {
+      try {
+        localStorage.setItem("neonslange-best", String(best));
+      } catch {
+        // Rekorden vises fortsatt i denne spilløkten hvis lagring er blokkert.
+      }
+    }
+
+    function resetGame() {
+      chooseRandomSong();
+      snake = [{ x: 9, y: 7 }, { x: 8, y: 7 }, { x: 7, y: 7 }];
+      direction = directions.right;
+      nextDirection = direction;
+      score = 0;
+      stepDuration = 145;
+      activeGameTime = 0;
+      bonusFruit = null;
+      foodsUntilBonus = 2 + Math.floor(Math.random() * 3);
+      speedEffect = null;
+      lastEffectSecond = -1;
+      obstacles = [];
+      explosions = [];
+      nextObstacleAt = 9000;
+      portalState = "closed";
+      portalStateAt = 0;
+      portalOpenUntil = 0;
+      nextPortalAt = 7000 + Math.random() * 4000;
+      portalTransit = false;
+      portalEndpoints = [];
+      pingPongBalls = [];
+      nextPingPongBallAt = 6500 + Math.random() * 5000;
+      arcadeVisitor = null;
+      nextVisitorAt = 12000 + Math.random() * 8000;
+      gameMessage.textContent = "";
+      updateScore();
+      placeFood();
+      draw();
+    }
+
+    function updateTrackButton() {
+      const song = songs[currentSongIndex];
+      trackButton.textContent = `Låt ${currentSongIndex + 1}/8`;
+      trackButton.title = `${song.name} · klikk for neste låt`;
+      trackButton.setAttribute("aria-label", `Låt ${currentSongIndex + 1} av 8: ${song.name}. Bytt låt`);
+    }
+
+    function chooseRandomSong() {
+      if (currentSongIndex < 0) {
+        currentSongIndex = Math.floor(Math.random() * songs.length);
+      } else {
+        const offset = 1 + Math.floor(Math.random() * (songs.length - 1));
+        currentSongIndex = (currentSongIndex + offset) % songs.length;
+      }
+      musicStep = 0;
+      musicBar = 0;
+      updateTrackButton();
+    }
+
+    function cycleSong() {
+      currentSongIndex = (currentSongIndex + 1) % songs.length;
+      musicStep = 0;
+      musicBar = 0;
+      updateTrackButton();
+      if (state === "playing" && musicEnabled) syncMusic();
+    }
+
+    function randomEmptyCell() {
+      const emptyCells = [];
+      for (let y = 0; y < rows; y += 1) {
+        for (let x = 0; x < columns; x += 1) {
+          const occupiedBySnake = snake.some((part) => part.x === x && part.y === y);
+          const occupiedByFood = food && food.x === x && food.y === y;
+          const occupiedByBonus = bonusFruit && bonusFruit.x === x && bonusFruit.y === y;
+          const occupiedByObstacle = obstacles.some((obstacle) => obstacle.x === x && obstacle.y === y);
+          const occupiedByVisitor = arcadeVisitor && !arcadeVisitor.leaving
+            && arcadeVisitor.x === x && arcadeVisitor.y === y;
+          const occupiedByBall = pingPongBalls.some((ball) =>
+            !ball.leaving && Math.hypot(ball.x - (x + 0.5) * cell, ball.y - (y + 0.5) * cell) < 24,
+          );
+          if (!occupiedBySnake && !occupiedByFood && !occupiedByBonus && !occupiedByObstacle
+            && !occupiedByVisitor && !occupiedByBall) {
+            emptyCells.push({ x, y });
+          }
+        }
+      }
+      return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    }
+
+    function placeFood() {
+      food = randomEmptyCell();
+    }
+
+    function maybeSpawnBonusFruit() {
+      if (bonusFruit) return;
+      foodsUntilBonus -= 1;
+      if (foodsUntilBonus > 0) return;
+
+      const spot = randomEmptyCell();
+      if (!spot) return;
+      const fruitTypes = [
+        { emoji: "🍊", name: "Gullfrukt", points: 40, effect: null },
+        { emoji: "🍇", name: "Blåbær", points: 10, effect: "slow" },
+        { emoji: "🌶️", name: "Chili", points: 20, effect: "fast" },
+      ];
+      const fruit = fruitTypes[Math.floor(Math.random() * fruitTypes.length)];
+      bonusFruit = { ...spot, ...fruit, expiresAt: activeGameTime + 8500 };
+      gameMessage.textContent = `${fruit.emoji} ${fruit.name} dukket opp!`;
+      foodsUntilBonus = 2 + Math.floor(Math.random() * 3);
+    }
+
+    function collectBonusFruit() {
+      const fruit = bonusFruit;
+      if (!fruit) return;
+
+      score += fruit.points;
+      updateScore();
+      playFoodSound();
+      bonusFruit = null;
+
+      if (fruit.effect === "slow") {
+        speedEffect = { type: "slow", expiresAt: activeGameTime + 6000 };
+        gameMessage.textContent = "🍇 Blåbær: Slangen blir roligere i 6 sekunder!";
+      } else if (fruit.effect === "fast") {
+        speedEffect = { type: "fast", expiresAt: activeGameTime + 6000 };
+        gameMessage.textContent = "🌶️ Chili: Fartsboost i 6 sekunder!";
+      } else {
+        gameMessage.textContent = `🍊 Gullfrukt: +${fruit.points} bonuspoeng!`;
+      }
+      lastEffectSecond = -1;
+    }
+
+    function updateBonusTimers() {
+      if (bonusFruit && activeGameTime >= bonusFruit.expiresAt) {
+        bonusFruit = null;
+        foodsUntilBonus = 2 + Math.floor(Math.random() * 3);
+        gameMessage.textContent = "Bonusfrukten forsvant – kanskje neste gang!";
+      }
+      if (speedEffect && activeGameTime >= speedEffect.expiresAt) {
+        speedEffect = null;
+        lastEffectSecond = -1;
+        gameMessage.textContent = "Farten er tilbake til normalen!";
+      }
+      if (speedEffect) {
+        const secondsLeft = Math.ceil((speedEffect.expiresAt - activeGameTime) / 1000);
+        if (secondsLeft !== lastEffectSecond) {
+          lastEffectSecond = secondsLeft;
+          const effectName = speedEffect.type === "slow" ? "Sakte modus" : "Fartsboost";
+          gameMessage.textContent = `${effectName} · ${secondsLeft}s`;
+        }
+      }
+    }
+
+    function spawnObstacleWave() {
+      const types = [
+        { emoji: "💣", name: "bombe", color: "#ff6584" },
+        { emoji: "🌵", name: "kaktus", color: "#6dff9b" },
+        { emoji: "🕳️", name: "hull", color: "#c8a5ff" },
+      ];
+      const count = 1 + Math.floor(Math.random() * 2);
+      const warningAt = activeGameTime;
+      const activeAt = warningAt + 1200;
+      const expiresAt = activeAt + 6500;
+
+      for (let i = 0; i < count; i += 1) {
+        const candidates = [];
+        for (let y = 0; y < rows; y += 1) {
+          for (let x = 0; x < columns; x += 1) {
+            const nearHead = Math.abs(snake[0].x - x) + Math.abs(snake[0].y - y) < 4;
+            if (!nearHead) candidates.push({ x, y });
+          }
+        }
+        const spot = randomEmptyCellFrom(candidates);
+        if (!spot) break;
+        const type = types[Math.floor(Math.random() * types.length)];
+        obstacles.push({ ...spot, ...type, activeAt, expiresAt });
+      }
+
+      if (obstacles.length) gameMessage.textContent = "⚠️ Nye hindringer! Styr unna!";
+      nextObstacleAt = activeGameTime + 18000 + Math.random() * 7000;
+    }
+
+    function randomEmptyCellFrom(candidates) {
+      const available = candidates.filter((spot) => {
+        const occupiedBySnake = snake.some((part) => part.x === spot.x && part.y === spot.y);
+        const occupiedByFood = food && food.x === spot.x && food.y === spot.y;
+        const occupiedByBonus = bonusFruit && bonusFruit.x === spot.x && bonusFruit.y === spot.y;
+        const occupiedByObstacle = obstacles.some(
+          (obstacle) => obstacle.x === spot.x && obstacle.y === spot.y,
+        );
+        return !occupiedBySnake && !occupiedByFood && !occupiedByBonus && !occupiedByObstacle;
+      });
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    function updateObstacles() {
+      const expired = obstacles.filter((obstacle) => activeGameTime >= obstacle.expiresAt);
+      if (expired.length) {
+        for (const obstacle of expired) {
+          if (obstacle.name === "bombe") detonateBomb(obstacle);
+        }
+        obstacles = obstacles.filter((obstacle) => activeGameTime < obstacle.expiresAt);
+        if (!expired.some((obstacle) => obstacle.name === "bombe")) {
+          gameMessage.textContent = "Hindringene er borte. Klar bane!";
+        }
+      }
+      if (!obstacles.length && activeGameTime >= nextObstacleAt) {
+        spawnObstacleWave();
+      }
+      if (obstacles.length && activeGameTime < obstacles[0].activeAt) {
+        gameMessage.textContent = "⚠️ Hindringer kommer – styr unna!";
+      } else if (obstacles.length) {
+        gameMessage.textContent = "🚧 Hindringer på brettet!";
+      }
+    }
+
+    function detonateBomb(bomb) {
+      const blastRadius = 2;
+      const distanceTo = (part) => Math.max(Math.abs(part.x - bomb.x), Math.abs(part.y - bomb.y));
+      explosions.push({
+        x: (bomb.x + 0.5) * cell,
+        y: (bomb.y + 0.5) * cell,
+        startedAt: performance.now(),
+        duration: 650,
+        particles: Array.from({ length: 18 }, () => ({
+          angle: Math.random() * Math.PI * 2,
+          speed: 30 + Math.random() * 95,
+          size: 2 + Math.random() * 4,
+          color: ["#fff4a1", "#ffbd4a", "#ff6b48", "#ff70b5"][Math.floor(Math.random() * 4)],
+        })),
+      });
+      playBombSound();
+
+      if (!snake.length) return;
+      if (distanceTo(snake[0]) <= blastRadius) {
+        gameMessage.textContent = "💥 Bomben traff hodet ditt!";
+        finishGame(false, true);
+        return;
+      }
+
+      const tailHitIndex = snake.findIndex((part, index) =>
+        index > 0 && distanceTo(part) <= blastRadius,
+      );
+      if (tailHitIndex > 0) {
+        const lostSegments = snake.length - tailHitIndex;
+        snake = snake.slice(0, tailHitIndex);
+        gameMessage.textContent = `💥 Eksplosjonen blåste bort ${lostSegments} haledel${lostSegments === 1 ? "" : "er"}!`;
+      } else {
+        gameMessage.textContent = "💥 Bomben sprengte!";
+      }
+    }
+
+    function updateExplosions() {
+      explosions = explosions.filter(
+        (explosion) => performance.now() - explosion.startedAt < explosion.duration,
+      );
+    }
+
+    function createPortalEndpoints() {
+      const sides = ["left", "right", "top", "bottom"];
+      const firstSide = sides[Math.floor(Math.random() * sides.length)];
+      const remainingSides = sides.filter((side) => side !== firstSide);
+      const secondSide = remainingSides[Math.floor(Math.random() * remainingSides.length)];
+      const margin = 3;
+      const endpoint = (side) => {
+        const span = side === "left" || side === "right" ? rows : columns;
+        return {
+          side,
+          position: margin + Math.floor(Math.random() * (span - margin * 2)),
+        };
+      };
+      portalEndpoints = [endpoint(firstSide), endpoint(secondSide)];
+    }
+
+    function findPortalExit(head) {
+      if (portalState !== "open") return null;
+      let side;
+      let position;
+      if (head.x < 0) {
+        side = "left";
+        position = head.y;
+      } else if (head.x >= columns) {
+        side = "right";
+        position = head.y;
+      } else if (head.y < 0) {
+        side = "top";
+        position = head.x;
+      } else if (head.y >= rows) {
+        side = "bottom";
+        position = head.x;
+      } else {
+        return null;
+      }
+
+      const entry = portalEndpoints.find(
+        (portal) => portal.side === side && portal.position === position,
+      );
+      if (!entry) return null;
+      const exit = portalEndpoints.find((portal) => portal !== entry);
+      if (exit.side === "left") return { x: 0, y: exit.position, direction: directions.right };
+      if (exit.side === "right") return { x: columns - 1, y: exit.position, direction: directions.left };
+      if (exit.side === "top") return { x: exit.position, y: 0, direction: directions.down };
+      return { x: exit.position, y: rows - 1, direction: directions.up };
+    }
+
+    function beginPortalClosing(message) {
+      portalTransit = false;
+      portalState = "closing";
+      portalStateAt = activeGameTime;
+      gameMessage.textContent = message;
+    }
+
+    function updatePortalTimers() {
+      if (portalState === "closed" && activeGameTime >= nextPortalAt) {
+        createPortalEndpoints();
+        portalState = "opening";
+        portalStateAt = activeGameTime;
+        gameMessage.textContent = "🌀 To portaler åpner seg langs kantene!";
+      } else if (portalState === "opening" && activeGameTime - portalStateAt >= 750) {
+        portalState = "open";
+        portalStateAt = activeGameTime;
+        portalOpenUntil = activeGameTime + 6500;
+        gameMessage.textContent = "🌀 Portalene er åpne! Gå gjennom et lysende felt på kanten.";
+      } else if (portalState === "open" && !portalTransit && activeGameTime >= portalOpenUntil) {
+        beginPortalClosing("🌀 Portalene lukker seg!");
+      } else if (portalState === "closing" && activeGameTime - portalStateAt >= 700) {
+        portalState = "closed";
+        portalStateAt = activeGameTime;
+        nextPortalAt = activeGameTime + 12000 + Math.random() * 6000;
+        gameMessage.textContent = "Portalene er lukket.";
+      }
+    }
+
+    function spawnPingPongBall() {
+      if (pingPongBalls.length >= 4) {
+        nextPingPongBallAt = activeGameTime + 1800;
+        return;
+      }
+      const spot = randomEmptyCell();
+      if (!spot) {
+        nextPingPongBallAt = activeGameTime + 1800;
+        return;
+      }
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 155 + Math.random() * 55;
+      pingPongBalls.push({
+        x: (spot.x + 0.5) * cell,
+        y: (spot.y + 0.5) * cell,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 8,
+        expiresAt: activeGameTime + 7500 + Math.random() * 2500,
+        leaving: false,
+      });
+      nextPingPongBallAt = activeGameTime + 4000 + Math.random() * 2500;
+      gameMessage.textContent = `🏓 Pingpongball på banen! (${pingPongBalls.length}/4)`;
+    }
+
+    function startBallExit(ball) {
+      const distances = [
+        { side: "left", distance: ball.x },
+        { side: "right", distance: canvas.width - ball.x },
+        { side: "top", distance: ball.y },
+        { side: "bottom", distance: canvas.height - ball.y },
+      ];
+      const { side } = distances.reduce((nearest, current) =>
+        current.distance < nearest.distance ? current : nearest,
+      );
+      let target;
+      if (side === "left") target = { x: -ball.radius * 3, y: ball.y };
+      else if (side === "right") target = { x: canvas.width + ball.radius * 3, y: ball.y };
+      else if (side === "top") target = { x: ball.x, y: -ball.radius * 3 };
+      else target = { x: ball.x, y: canvas.height + ball.radius * 3 };
+      ball.leaving = true;
+      ball.leaveStartedAt = activeGameTime;
+      ball.leaveFrom = { x: ball.x, y: ball.y };
+      ball.leaveTo = target;
+      gameMessage.textContent = "🏓 Ballen hopper ut av brettet!";
+    }
+
+    function bounceBallFrom(ball, x, y, radius) {
+      const dx = ball.x - x;
+      const dy = ball.y - y;
+      const minimumDistance = ball.radius + radius;
+      const distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared >= minimumDistance * minimumDistance) return;
+
+      const distance = Math.sqrt(distanceSquared);
+      const normalX = distance === 0 ? 1 : dx / distance;
+      const normalY = distance === 0 ? 0 : dy / distance;
+      const velocityAlongNormal = ball.vx * normalX + ball.vy * normalY;
+      if (velocityAlongNormal < 0) {
+        ball.vx -= 2 * velocityAlongNormal * normalX;
+        ball.vy -= 2 * velocityAlongNormal * normalY;
+      }
+      const pushOut = minimumDistance - distance + 0.5;
+      ball.x += normalX * pushOut;
+      ball.y += normalY * pushOut;
+    }
+
+    function bounceBalls(first, second) {
+      const dx = first.x - second.x;
+      const dy = first.y - second.y;
+      const minimumDistance = first.radius + second.radius;
+      const distanceSquared = dx * dx + dy * dy;
+      if (distanceSquared >= minimumDistance * minimumDistance) return;
+
+      const distance = Math.sqrt(distanceSquared);
+      const normalX = distance === 0 ? 1 : dx / distance;
+      const normalY = distance === 0 ? 0 : dy / distance;
+      const relativeVelocity = (first.vx - second.vx) * normalX
+        + (first.vy - second.vy) * normalY;
+      if (relativeVelocity < 0) {
+        first.vx -= relativeVelocity * normalX;
+        first.vy -= relativeVelocity * normalY;
+        second.vx += relativeVelocity * normalX;
+        second.vy += relativeVelocity * normalY;
+      }
+      const pushOut = (minimumDistance - distance + 0.5) / 2;
+      first.x += normalX * pushOut;
+      first.y += normalY * pushOut;
+      second.x -= normalX * pushOut;
+      second.y -= normalY * pushOut;
+    }
+
+    function updatePingPongBall(frameDelta) {
+      if (activeGameTime >= nextPingPongBallAt && pingPongBalls.length < 4) {
+        spawnPingPongBall();
+      }
+
+      for (const ball of pingPongBalls) {
+        if (ball.leaving) {
+          const progress = Math.min(1, (activeGameTime - ball.leaveStartedAt) / 850);
+          ball.x = ball.leaveFrom.x + (ball.leaveTo.x - ball.leaveFrom.x) * progress;
+          ball.y = ball.leaveFrom.y + (ball.leaveTo.y - ball.leaveFrom.y) * progress
+            - Math.sin(progress * Math.PI) * 55;
+          continue;
+        }
+
+        if (activeGameTime >= ball.expiresAt) {
+          startBallExit(ball);
+          continue;
+        }
+
+        const elapsed = frameDelta / 1000;
+        ball.x += ball.vx * elapsed;
+        ball.y += ball.vy * elapsed;
+
+        if (ball.x < ball.radius) {
+          ball.x = ball.radius;
+          ball.vx = Math.abs(ball.vx);
+        } else if (ball.x > canvas.width - ball.radius) {
+          ball.x = canvas.width - ball.radius;
+          ball.vx = -Math.abs(ball.vx);
+        }
+        if (ball.y < ball.radius) {
+          ball.y = ball.radius;
+          ball.vy = Math.abs(ball.vy);
+        } else if (ball.y > canvas.height - ball.radius) {
+          ball.y = canvas.height - ball.radius;
+          ball.vy = -Math.abs(ball.vy);
+        }
+
+        for (const part of snake) {
+          bounceBallFrom(ball, (part.x + 0.5) * cell, (part.y + 0.5) * cell, 11);
+        }
+        if (food) bounceBallFrom(ball, (food.x + 0.5) * cell, (food.y + 0.5) * cell, 10);
+        if (bonusFruit) bounceBallFrom(ball, (bonusFruit.x + 0.5) * cell, (bonusFruit.y + 0.5) * cell, 13);
+        for (const obstacle of obstacles) {
+          if (activeGameTime >= obstacle.activeAt) {
+            bounceBallFrom(ball, (obstacle.x + 0.5) * cell, (obstacle.y + 0.5) * cell, 12);
+          }
+        }
+      }
+
+      for (let i = 0; i < pingPongBalls.length; i += 1) {
+        const first = pingPongBalls[i];
+        if (first.leaving) continue;
+        for (let j = i + 1; j < pingPongBalls.length; j += 1) {
+          const second = pingPongBalls[j];
+          if (!second.leaving) bounceBalls(first, second);
+        }
+      }
+
+      pingPongBalls = pingPongBalls.filter((ball) =>
+        !ball.leaving || activeGameTime - ball.leaveStartedAt < 850,
+      );
+    }
+
+    function drawPingPongBall() {
+      for (const { x, y, radius } of pingPongBalls) {
+        ctx.save();
+        ctx.shadowColor = "#dffcff";
+        ctx.shadowBlur = 15;
+        const ballGradient = ctx.createRadialGradient(x - 3, y - 4, 1, x, y, radius + 2);
+        ballGradient.addColorStop(0, "#ffffff");
+        ballGradient.addColorStop(0.7, "#efffff");
+        ballGradient.addColorStop(1, "#9cdbdf");
+        ctx.fillStyle = ballGradient;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#55bdc6";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(x, y, radius * 0.48, radius * 0.92, 0.55, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function updateScore() {
+      scoreDisplay.textContent = score;
+      stepDuration = Math.max(72, 145 - Math.floor(score / 50) * 8);
+      if (score > best) {
+        best = score;
+        bestDisplay.textContent = best;
+        saveBest();
+      }
+    }
+
+    function showOverlay(title, message, buttonText) {
+      overlayTitle.textContent = title;
+      overlayMessage.textContent = message;
+      startButton.textContent = buttonText;
+      overlay.hidden = false;
+    }
+
+    function startGame() {
+      if (state === "ready" || state === "over") resetGame();
+      state = "playing";
+      lastStep = 0;
+      overlay.hidden = true;
+      pauseButton.disabled = false;
+      pauseButton.textContent = "Pause";
+      syncMusic();
+    }
+
+    function togglePause() {
+      if (state === "playing") {
+        state = "paused";
+        showOverlay("Liten pustepause", "Slangen venter tålmodig på neste trekk.", "Fortsett");
+        pauseButton.textContent = "Fortsett";
+        syncMusic();
+      } else if (state === "paused") {
+        state = "playing";
+        lastStep = 0;
+        overlay.hidden = true;
+        pauseButton.textContent = "Pause";
+        syncMusic();
+      }
+    }
+
+    function setDirection(name) {
+      const candidate = directions[name];
+      if (!candidate || state === "over") return;
+      if (candidate.x + nextDirection.x === 0 && candidate.y + nextDirection.y === 0) return;
+      nextDirection = candidate;
+      if (state === "ready") startGame();
+    }
+
+    function finishGame(hitObstacle = false, hitBomb = false) {
+      state = "over";
+      pauseButton.disabled = true;
+      playGameOverSound();
+      syncMusic();
+      showOverlay(
+        hitBomb ? "Bom!" : hitObstacle ? "Oi, et hinder!" : "Au, det var halen!",
+        `${hitBomb ? "Eksplosjonen traff hodet ditt. " : hitObstacle ? "Du traff et hinder. " : ""}Du fikk ${score} poeng. Klar for et nytt forsøk?`,
+        "Spill igjen",
+      );
+    }
+
+    function step() {
+      direction = nextDirection;
+      const head = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y,
+      };
+      const portalExit = findPortalExit(head);
+      const startsPortalTransit = Boolean(portalExit) && !portalTransit;
+      if (portalExit) {
+        head.x = portalExit.x;
+        head.y = portalExit.y;
+      }
+      const eating = head.x === food.x && head.y === food.y;
+      const eatingBonus = bonusFruit && head.x === bonusFruit.x && head.y === bonusFruit.y;
+      const bodyToCheck = eating || eatingBonus ? snake : snake.slice(0, -1);
+      const hitWall = head.x < 0 || head.x >= columns || head.y < 0 || head.y >= rows;
+      const hitSelf = bodyToCheck.some((part) => part.x === head.x && part.y === head.y);
+      const hitObstacle = obstacles.some((obstacle) => obstacle.x === head.x && obstacle.y === head.y);
+
+      if (hitWall || hitSelf || hitObstacle) {
+        finishGame(hitObstacle);
+        return;
+      }
+
+      if (portalExit) {
+        direction = portalExit.direction;
+        nextDirection = portalExit.direction;
+      }
+      if (startsPortalTransit) {
+        portalTransit = true;
+        snake.forEach((part) => { part.portalPassed = false; });
+        gameMessage.textContent = "🌀 Hele slangen følger gjennom portalen!";
+      }
+      head.portalPassed = portalTransit;
+      snake.unshift(head);
+      if (eating) {
+        score += 10;
+        updateScore();
+        playFoodSound();
+        maybeSpawnBonusFruit();
+        placeFood();
+      }
+      if (eatingBonus) {
+        collectBonusFruit();
+      } else if (!eating) {
+        snake.pop();
+      }
+      if (portalTransit && snake.every((part) => part.portalPassed)) {
+        beginPortalClosing("🌀 Hele slangen kom gjennom – portalene lukker seg!");
+      }
+      draw();
+    }
+
+    function createAudio() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) {
+        musicButton.disabled = true;
+        musicButton.textContent = "Lyd støttes ikke";
+        musicButton.title = "Nettleseren støtter ikke Web Audio.";
+        return false;
+      }
+      audioContext = new AudioContextClass();
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = 0;
+      masterGain.connect(audioContext.destination);
+      noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate, audioContext.sampleRate);
+      const noise = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < noise.length; i += 1) noise[i] = Math.random() * 2 - 1;
+      return true;
+    }
+
+    function setMasterVolume(volume) {
+      if (!masterGain || !audioContext) return;
+      masterGain.gain.cancelScheduledValues(audioContext.currentTime);
+      masterGain.gain.setTargetAtTime(volume, audioContext.currentTime, 0.04);
+    }
+
+    function playTone(note, startTime, duration, volume, type = "square") {
+      if (!audioContext || !masterGain) return;
+      const oscillator = audioContext.createOscillator();
+      const envelope = audioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(440 * 2 ** ((note - 69) / 12), startTime);
+      envelope.gain.setValueAtTime(0.0001, startTime);
+      envelope.gain.exponentialRampToValueAtTime(volume, startTime + 0.012);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      oscillator.connect(envelope);
+      envelope.connect(masterGain);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.02);
+    }
+
+    function playNoise(time, duration, volume, cutoff, type) {
+      const source = audioContext.createBufferSource();
+      const filter = audioContext.createBiquadFilter();
+      const envelope = audioContext.createGain();
+      source.buffer = noiseBuffer;
+      filter.type = type;
+      filter.frequency.setValueAtTime(cutoff, time);
+      envelope.gain.setValueAtTime(volume, time);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+      source.connect(filter);
+      filter.connect(envelope);
+      envelope.connect(masterGain);
+      source.start(time);
+      source.stop(time + duration);
+    }
+
+    function playKick(time) {
+      const oscillator = audioContext.createOscillator();
+      const envelope = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(145, time);
+      oscillator.frequency.exponentialRampToValueAtTime(48, time + 0.12);
+      envelope.gain.setValueAtTime(0.0001, time);
+      envelope.gain.exponentialRampToValueAtTime(0.17, time + 0.008);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, time + 0.14);
+      oscillator.connect(envelope);
+      envelope.connect(masterGain);
+      oscillator.start(time);
+      oscillator.stop(time + 0.15);
+    }
+
+    function scheduleMusicStep(time) {
+      const song = songs[currentSongIndex];
+      const barIndex = musicBar % 16;
+      const harmonyForBar = harmony[song.chords[barIndex % song.chords.length]];
+      const phraseStep = (barIndex % (song.melody.length / 16)) * 16 + musicStep;
+      const note = song.melody[phraseStep];
+      if (note !== null) {
+        playTone(note + song.transpose, time, song.leadDuration, song.leadVolume, song.leadWave);
+        if (musicStep % 4 === 2 && song.leadWave !== "sine") {
+          playTone(note + song.transpose - 12, time, song.leadDuration * 1.25, song.leadVolume * 0.28, "triangle");
+        }
+      }
+
+      if (musicStep % 2 === 1) {
+        const arpIndex = song.arpPattern[Math.floor(musicStep / 2)];
+        const arpNote = harmonyForBar.chord[arpIndex] + song.transpose + 12;
+        playTone(arpNote, time, 0.085, 0.035, song.arpWave);
+      }
+      if (musicStep === 0) {
+        const bassOffset = song.bassPattern[barIndex % song.bassPattern.length];
+        if (bassOffset !== null) {
+          playTone(harmonyForBar.bass + song.bassShift + bassOffset, time, 0.2, 0.13, song.bassWave);
+        }
+      }
+      if (musicStep === 6 || musicStep === 14) {
+        const bassOffset = song.bassPattern[barIndex % song.bassPattern.length];
+        if (bassOffset !== null) {
+          playTone(harmonyForBar.bass + song.bassShift + bassOffset + 7, time, 0.12, 0.065, song.bassWave);
+        }
+      }
+      if (musicStep === 8) {
+        const bassOffset = song.bassPattern[barIndex % song.bassPattern.length];
+        if (bassOffset !== null) {
+          playTone(harmonyForBar.bass + song.bassShift + bassOffset + 12, time, 0.15, 0.09, song.bassWave);
+        }
+      }
+
+      if (song.drums[barIndex]) {
+        const kickSteps = song.drumStyle === 1 ? [0, 6, 8, 14]
+          : song.drumStyle === 2 ? [0, 10]
+            : song.drumStyle === 3 ? [0, 4, 8, 12] : [0, 8];
+        const snareSteps = song.drumStyle === 2 ? [6, 14] : [4, 12];
+        if (kickSteps.includes(musicStep)) playKick(time);
+        if (snareSteps.includes(musicStep)) {
+          playNoise(time, 0.12, 0.065, song.drumStyle === 3 ? 2400 : 1900, "bandpass");
+        }
+        if (musicStep === 2 || musicStep === 6 || musicStep === 10 || musicStep === 14) {
+          playNoise(time, 0.035, 0.025, 7500, "highpass");
+        }
+      }
+
+      musicStep += 1;
+      if (musicStep === 16) {
+        musicStep = 0;
+        musicBar = (musicBar + 1) % 16;
+      }
+    }
+
+    function syncMusic() {
+      if (state !== "playing" || !musicEnabled) {
+        if (musicTimer !== null) {
+          clearInterval(musicTimer);
+          musicTimer = null;
+        }
+        if (state === "over" && musicEnabled && audioContext) {
+          window.setTimeout(() => {
+            if (state === "over") setMasterVolume(0);
+          }, 420);
+        } else {
+          setMasterVolume(0);
+        }
+        return;
+      }
+
+      if (!audioContext && !createAudio()) return;
+      if (musicTimer !== null) {
+        clearInterval(musicTimer);
+        musicTimer = null;
+      }
+      audioContext.resume();
+      setMasterVolume(0.7);
+      nextNoteTime = audioContext.currentTime + 0.04;
+      const secondsPerStep = 60 / songs[currentSongIndex].bpm / 4;
+      musicTimer = window.setInterval(() => {
+        while (nextNoteTime < audioContext.currentTime + 0.12) {
+          scheduleMusicStep(nextNoteTime);
+          nextNoteTime += secondsPerStep;
+        }
+      }, 25);
+    }
+
+    function playFoodSound() {
+      if (!musicEnabled || state !== "playing" || !audioContext) return;
+      const time = audioContext.currentTime;
+      playTone(84, time, 0.09, 0.1, "triangle");
+      playTone(91, time + 0.07, 0.12, 0.075, "triangle");
+    }
+
+    function playGameOverSound() {
+      if (!musicEnabled || !audioContext) return;
+      const time = audioContext.currentTime;
+      playTone(67, time, 0.18, 0.1, "triangle");
+      playTone(60, time + 0.13, 0.3, 0.1, "triangle");
+    }
+
+    function playBombSound() {
+      if (!musicEnabled || !audioContext || !masterGain) return;
+      const time = audioContext.currentTime;
+      const oscillator = audioContext.createOscillator();
+      const envelope = audioContext.createGain();
+      oscillator.type = "sawtooth";
+      oscillator.frequency.setValueAtTime(125, time);
+      oscillator.frequency.exponentialRampToValueAtTime(38, time + 0.32);
+      envelope.gain.setValueAtTime(0.0001, time);
+      envelope.gain.exponentialRampToValueAtTime(0.2, time + 0.012);
+      envelope.gain.exponentialRampToValueAtTime(0.0001, time + 0.36);
+      oscillator.connect(envelope);
+      envelope.connect(masterGain);
+      oscillator.start(time);
+      oscillator.stop(time + 0.38);
+      playNoise(time, 0.28, 0.22, 1100, "lowpass");
+      playNoise(time + 0.02, 0.2, 0.13, 4200, "highpass");
+    }
+
+    function portalCell(endpoint) {
+      if (endpoint.side === "left") return { x: 0, y: endpoint.position };
+      if (endpoint.side === "right") return { x: columns - 1, y: endpoint.position };
+      if (endpoint.side === "top") return { x: endpoint.position, y: 0 };
+      return { x: endpoint.position, y: rows - 1 };
+    }
+
+    function spawnArcadeVisitor() {
+      const spot = randomEmptyCell();
+      if (!spot) {
+        nextVisitorAt = activeGameTime + 4000;
+        return;
+      }
+      arcadeVisitor = {
+        x: spot.x,
+        y: spot.y,
+        direction: directions.right,
+        moveAccumulator: 0,
+        moveInterval: 255,
+        expiresAt: activeGameTime + 22000,
+        leaving: false,
+        trip: null,
+        targetPortal: null,
+      };
+      gameMessage.textContent = "✨ Glimt dukket opp og leter etter frukt!";
+    }
+
+    function startVisitorPortalTrip(visitor) {
+      const entry = visitor.targetPortal;
+      const exit = portalEndpoints.find((endpoint) => endpoint !== entry);
+      const from = { x: (visitor.x + 0.5) * cell, y: (visitor.y + 0.5) * cell };
+      const exitCell = portalCell(exit);
+      const exitPoint = { x: (exitCell.x + 0.5) * cell, y: (exitCell.y + 0.5) * cell };
+      const outside = exit.side === "left"
+        ? { x: -48, y: exitPoint.y }
+        : exit.side === "right"
+          ? { x: canvas.width + 48, y: exitPoint.y }
+          : exit.side === "top"
+            ? { x: exitPoint.x, y: -48 }
+            : { x: exitPoint.x, y: canvas.height + 48 };
+      visitor.leaving = true;
+      visitor.trip = {
+        from,
+        exitPoint,
+        outside,
+        startedAt: activeGameTime,
+        duration: 560,
+      };
+      gameMessage.textContent = "✨ Glimt suser gjennom portalen!";
+    }
+
+    function chooseVisitorStep(visitor) {
+      const choices = Object.values(directions).map((move) => ({
+        move,
+        x: visitor.x + move.x,
+        y: visitor.y + move.y,
+      })).filter((choice) =>
+        choice.x >= 0 && choice.x < columns && choice.y >= 0 && choice.y < rows,
+      );
+      const nonReverse = choices.filter((choice) =>
+        choice.move.x + visitor.direction.x !== 0 || choice.move.y + visitor.direction.y !== 0,
+      );
+      const available = nonReverse.length ? nonReverse : choices;
+      if (!available.length) return null;
+
+      if (visitor.targetPortal) {
+        const target = portalCell(visitor.targetPortal);
+        const bestDistance = Math.min(...available.map((choice) =>
+          Math.abs(choice.x - target.x) + Math.abs(choice.y - target.y),
+        ));
+        return available.filter((choice) =>
+          Math.abs(choice.x - target.x) + Math.abs(choice.y - target.y) === bestDistance,
+        )[Math.floor(Math.random() * available.filter((choice) =>
+          Math.abs(choice.x - target.x) + Math.abs(choice.y - target.y) === bestDistance,
+        ).length)];
+      }
+
+      if (food && Math.random() < 0.65) {
+        const towardFood = available.filter((choice) =>
+          Math.abs(choice.x - food.x) + Math.abs(choice.y - food.y)
+          < Math.abs(visitor.x - food.x) + Math.abs(visitor.y - food.y),
+        );
+        if (towardFood.length) return towardFood[Math.floor(Math.random() * towardFood.length)];
+      }
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    function updateArcadeVisitor(frameDelta) {
+      if (!arcadeVisitor) {
+        if (activeGameTime >= nextVisitorAt) spawnArcadeVisitor();
+        return;
+      }
+      const visitor = arcadeVisitor;
+
+      if (visitor.leaving) {
+        if (activeGameTime - visitor.trip.startedAt >= visitor.trip.duration) {
+          arcadeVisitor = null;
+          nextVisitorAt = activeGameTime + 18000 + Math.random() * 12000;
+        }
+        return;
+      }
+
+      if (portalState === "open" && activeGameTime >= visitor.expiresAt) {
+        if (!visitor.targetPortal) {
+          visitor.targetPortal = portalEndpoints.reduce((nearest, endpoint) => {
+            const point = portalCell(endpoint);
+            const distance = Math.abs(visitor.x - point.x) + Math.abs(visitor.y - point.y);
+            return !nearest || distance < nearest.distance ? { endpoint, distance } : nearest;
+          }, null).endpoint;
+        }
+        const target = portalCell(visitor.targetPortal);
+        if (visitor.x === target.x && visitor.y === target.y) {
+          startVisitorPortalTrip(visitor);
+          return;
+        }
+      } else {
+        visitor.targetPortal = null;
+      }
+
+      visitor.moveAccumulator += frameDelta;
+      const moveInterval = visitor.targetPortal ? 100 : visitor.moveInterval;
+      if (visitor.moveAccumulator < moveInterval) return;
+      visitor.moveAccumulator %= moveInterval;
+
+      const next = chooseVisitorStep(visitor);
+      if (!next) return;
+      visitor.x = next.x;
+      visitor.y = next.y;
+      visitor.direction = next.move;
+
+      if (food && visitor.x === food.x && visitor.y === food.y) {
+        gameMessage.textContent = "✨ Glimt spiste en frukt!";
+        placeFood();
+      }
+    }
+
+    function drawArcadeVisitor() {
+      if (!arcadeVisitor) return;
+      const visitor = arcadeVisitor;
+      let x = (visitor.x + 0.5) * cell;
+      let y = (visitor.y + 0.5) * cell;
+      let rotation = Math.atan2(visitor.direction.y, visitor.direction.x);
+
+      if (visitor.leaving) {
+        const { from, exitPoint, outside, startedAt, duration } = visitor.trip;
+        const progress = Math.min(1, (activeGameTime - startedAt) / duration);
+        if (progress < 0.48) {
+          const travel = progress / 0.48;
+          x = from.x + (exitPoint.x - from.x) * travel;
+          y = from.y + (exitPoint.y - from.y) * travel;
+        } else {
+          const travel = (progress - 0.48) / 0.52;
+          x = exitPoint.x + (outside.x - exitPoint.x) * travel;
+          y = exitPoint.y + (outside.y - exitPoint.y) * travel;
+        }
+        rotation = Math.atan2(outside.y - exitPoint.y, outside.x - exitPoint.x);
+      }
+
+      const chomp = 0.5 + Math.sin(performance.now() / 75) * 0.5;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotation);
+      const scale = visitor.leaving
+        ? 1 + Math.min(1, (activeGameTime - visitor.trip.startedAt) / visitor.trip.duration) * 0.38
+        : 1 + Math.sin(performance.now() / 130) * 0.05;
+      ctx.scale(scale, scale);
+      ctx.shadowColor = "#ffbc42";
+      ctx.shadowBlur = 15;
+
+      ctx.strokeStyle = "#fff3a1";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-4, -8);
+      ctx.quadraticCurveTo(-9, -17, -13, -12);
+      ctx.moveTo(3, -8);
+      ctx.quadraticCurveTo(7, -18, 12, -13);
+      ctx.stroke();
+      ctx.fillStyle = "#a8fff0";
+      ctx.beginPath();
+      ctx.arc(-13, -12, 2.5, 0, Math.PI * 2);
+      ctx.arc(12, -13, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      const bodyGradient = ctx.createLinearGradient(-12, -10, 12, 11);
+      bodyGradient.addColorStop(0, "#fff28b");
+      bodyGradient.addColorStop(0.58, "#ffc744");
+      bodyGradient.addColorStop(1, "#ff8a45");
+      ctx.fillStyle = bodyGradient;
+      ctx.beginPath();
+      ctx.moveTo(-13, 3);
+      ctx.quadraticCurveTo(-15, -8, -5, -10);
+      ctx.quadraticCurveTo(7, -14, 13, -4);
+      ctx.quadraticCurveTo(17, 3, 11, 10);
+      ctx.quadraticCurveTo(4, 15, -5, 10);
+      ctx.quadraticCurveTo(-11, 13, -14, 9);
+      ctx.quadraticCurveTo(-7, 7 - chomp * 4, 0, 7);
+      ctx.quadraticCurveTo(-7, 5 + chomp * 3, -13, 3);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#573344";
+      ctx.beginPath();
+      ctx.arc(4, -4, 1.8, 0, Math.PI * 2);
+      ctx.arc(9, 0, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#bd5a35";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(3, 5);
+      ctx.quadraticCurveTo(7, 8, 10, 5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawExplosions() {
+      for (const explosion of explosions) {
+        const elapsed = performance.now() - explosion.startedAt;
+        const progress = Math.min(1, elapsed / explosion.duration);
+        const alpha = 1 - progress;
+        const radius = 12 + progress * cell * 2.2;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.globalCompositeOperation = "lighter";
+        const glow = ctx.createRadialGradient(explosion.x, explosion.y, 2, explosion.x, explosion.y, radius);
+        glow.addColorStop(0, "#fffbd0");
+        glow.addColorStop(0.16, "#ffe477dd");
+        glow.addColorStop(0.48, "#ff713ccc");
+        glow.addColorStop(1, "#ff3b8000");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(explosion.x, explosion.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#fff5ab";
+        ctx.lineWidth = 3 * alpha + 0.5;
+        ctx.beginPath();
+        ctx.arc(explosion.x, explosion.y, radius * 0.82, -0.4, Math.PI * 1.65);
+        ctx.stroke();
+        ctx.strokeStyle = "#ff814e";
+        ctx.lineWidth = 2 * alpha + 0.5;
+        ctx.beginPath();
+        ctx.arc(explosion.x, explosion.y, radius * 0.58, Math.PI * 0.75, Math.PI * 2.15);
+        ctx.stroke();
+
+        for (const particle of explosion.particles) {
+          const distance = particle.speed * (elapsed / 1000);
+          const particleX = explosion.x + Math.cos(particle.angle) * distance;
+          const particleY = explosion.y + Math.sin(particle.angle) * distance;
+          ctx.fillStyle = particle.color;
+          ctx.beginPath();
+          ctx.arc(particleX, particleY, particle.size * alpha, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = "#111328";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(170, 155, 255, 0.055)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= columns; x += 1) {
+        ctx.beginPath();
+        ctx.moveTo(x * cell + 0.5, 0);
+        ctx.lineTo(x * cell + 0.5, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= rows; y += 1) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * cell + 0.5);
+        ctx.lineTo(canvas.width, y * cell + 0.5);
+        ctx.stroke();
+      }
+
+      if (portalState !== "closed") drawPortals();
+
+      if (food) {
+        const cx = food.x * cell + cell / 2;
+        const cy = food.y * cell + cell / 2;
+        const pulse = 1 + Math.sin(performance.now() / 170) * 0.08;
+        ctx.save();
+        ctx.shadowColor = "#ff62ba";
+        ctx.shadowBlur = 19;
+        const gradient = ctx.createRadialGradient(cx - 4, cy - 5, 1, cx, cy, 12 * pulse);
+        gradient.addColorStop(0, "#fff4ad");
+        gradient.addColorStop(0.42, "#ff8c81");
+        gradient.addColorStop(1, "#ff42ba");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 10 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      if (bonusFruit) {
+        const cx = bonusFruit.x * cell + cell / 2;
+        const cy = bonusFruit.y * cell + cell / 2;
+        const pulse = 1 + Math.sin(performance.now() / 110) * 0.12;
+        ctx.save();
+        ctx.shadowColor = "#ffd45c";
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = "#ffd45c88";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 13 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.font = "25px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(bonusFruit.emoji, cx, cy);
+        ctx.restore();
+      }
+
+      for (const obstacle of obstacles) {
+        const cx = obstacle.x * cell + cell / 2;
+        const cy = obstacle.y * cell + cell / 2;
+        const isWarning = activeGameTime < obstacle.activeAt;
+        ctx.save();
+        ctx.globalAlpha = isWarning ? 0.58 : 1;
+        if (isWarning) {
+          const pulse = 1 + Math.sin(performance.now() / 110) * 0.08;
+          ctx.strokeStyle = obstacle.color;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14 * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        drawObstacleShape(obstacle, cx, cy);
+        if (isWarning) {
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "#fff1b8";
+          ctx.strokeStyle = "#19152e";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx + 10, cy - 10, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#30203c";
+          ctx.font = "bold 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("!", cx + 10, cy - 10);
+        }
+        ctx.restore();
+      }
+
+      snake.forEach((part, index) => {
+        const inset = index === 0 ? 3 : 4;
+        const x = part.x * cell + inset;
+        const y = part.y * cell + inset;
+        const size = cell - inset * 2;
+        const hue = (164 + index * 7 + Math.sin(performance.now() / 900) * 12) % 360;
+        ctx.save();
+        ctx.shadowColor = index === 0 ? "#70ffe8" : `hsl(${hue} 95% 58%)`;
+        ctx.shadowBlur = index === 0 ? 16 : 8;
+        const gradient = ctx.createLinearGradient(x, y, x + size, y + size);
+        gradient.addColorStop(0, index === 0 ? "#b9fff1" : `hsl(${hue} 100% 70%)`);
+        gradient.addColorStop(1, index === 0 ? "#42dfc5" : `hsl(${hue} 85% 48%)`);
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(x, y, size, size, index === 0 ? 11 : 9);
+        ctx.fill();
+        ctx.restore();
+
+        if (index === 0) drawEyes(part);
+      });
+      drawPingPongBall();
+      drawArcadeVisitor();
+      drawExplosions();
+    }
+
+    function drawPortals() {
+      const transitionDuration = 750;
+      const progress = portalState === "opening"
+        ? Math.min(1, (activeGameTime - portalStateAt) / transitionDuration)
+        : portalState === "closing"
+          ? Math.max(0, 1 - (activeGameTime - portalStateAt) / 700)
+          : 1;
+      const pulse = 1 + Math.sin(performance.now() / 140) * 0.045;
+      portalEndpoints.forEach((endpoint, index) => {
+        const isVerticalEdge = endpoint.side === "left" || endpoint.side === "right";
+        const centerX = endpoint.side === "left" ? 2
+          : endpoint.side === "right" ? canvas.width - 2
+            : (endpoint.position + 0.5) * cell;
+        const centerY = endpoint.side === "top" ? 2
+          : endpoint.side === "bottom" ? canvas.height - 2
+            : (endpoint.position + 0.5) * cell;
+        drawPortalSide(centerX, centerY, progress * pulse, index === 0 ? "#6ef9ff" : "#d78aff", isVerticalEdge);
+      });
+    }
+
+    function drawPortalSide(x, y, openness, color, isVerticalEdge) {
+      if (openness <= 0.02) return;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, openness);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 20 * openness;
+      const radiusX = (isVerticalEdge ? 13 : 28) * openness;
+      const radiusY = (isVerticalEdge ? 28 : 13) * openness;
+      const glow = ctx.createLinearGradient(x - radiusX, y - radiusY, x + radiusX, y + radiusY);
+      glow.addColorStop(0, `${color}08`);
+      glow.addColorStop(0.5, `${color}aa`);
+      glow.addColorStop(1, `${color}08`);
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(x, y, Math.max(1, radiusX - 1), Math.max(1, radiusY - 1), 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha *= 0.75;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(x, y, Math.max(1, radiusX * 0.48), Math.max(1, radiusY * 0.72), 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = Math.min(1, openness) * 0.8;
+      ctx.fillStyle = "#ffffff";
+      for (const offset of [-0.55, 0, 0.55]) {
+        const angle = performance.now() / 400 + offset * 2.2;
+        ctx.beginPath();
+        ctx.arc(
+          x + Math.cos(angle) * radiusX * 0.45,
+          y + Math.sin(angle) * radiusY * 0.45,
+          1.8,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawObstacleShape(obstacle, cx, cy) {
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (obstacle.name === "bombe") {
+        const timeToExplosion = obstacle.expiresAt - activeGameTime;
+        if (activeGameTime >= obstacle.activeAt && timeToExplosion <= 2000) {
+          const urgency = Math.max(0, 1 - timeToExplosion / 2000);
+          const pulseInterval = 220 - urgency * 150;
+          const pulseAmount = 0.08 + urgency * 0.2;
+          const pulse = 1 + Math.sin(performance.now() / pulseInterval * Math.PI * 2) * pulseAmount;
+          ctx.translate(cx, cy);
+          ctx.scale(pulse, pulse);
+          ctx.translate(-cx, -cy);
+        }
+        ctx.shadowColor = "#ff536d";
+        ctx.shadowBlur = 9;
+        const bombGradient = ctx.createRadialGradient(cx - 4, cy - 5, 1, cx, cy, 13);
+        bombGradient.addColorStop(0, "#77758b");
+        bombGradient.addColorStop(0.4, "#363448");
+        bombGradient.addColorStop(1, "#171624");
+        ctx.fillStyle = bombGradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy + 2, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#ffc45e";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx + 3, cy - 6);
+        ctx.quadraticCurveTo(cx + 8, cy - 13, cx + 11, cy - 8);
+        ctx.stroke();
+        ctx.fillStyle = "#fff0a1";
+        ctx.beginPath();
+        ctx.arc(cx + 11, cy - 9, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(cx - 3, cy - 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      if (obstacle.name === "kaktus") {
+        ctx.shadowColor = "#48ff91";
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = "#47df7e";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 11);
+        ctx.lineTo(cx, cy - 10);
+        ctx.moveTo(cx, cy + 3);
+        ctx.lineTo(cx - 8, cy + 3);
+        ctx.lineTo(cx - 8, cy - 3);
+        ctx.moveTo(cx, cy - 2);
+        ctx.lineTo(cx + 8, cy - 2);
+        ctx.lineTo(cx + 8, cy - 8);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#c4ffd2";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(cx - 2, cy + 7);
+        ctx.lineTo(cx + 2, cy + 7);
+        ctx.moveTo(cx - 7, cy);
+        ctx.lineTo(cx - 7, cy + 4);
+        ctx.moveTo(cx + 7, cy - 5);
+        ctx.lineTo(cx + 7, cy - 1);
+        ctx.stroke();
+        return;
+      }
+
+      ctx.shadowColor = "#bd8aff";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = "#bb89ff";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, 13, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      const holeGradient = ctx.createRadialGradient(cx, cy + 1, 1, cx, cy + 2, 10);
+      holeGradient.addColorStop(0, "#05050c");
+      holeGradient.addColorStop(0.72, "#100d20");
+      holeGradient.addColorStop(1, "#40305a");
+      ctx.fillStyle = holeGradient;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 1, 9, 6.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#ead8ff";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 2, 12, 8.5, 0, 0.08, Math.PI - 0.08);
+      ctx.stroke();
+    }
+
+    function drawEyes(head) {
+      const cx = head.x * cell + cell / 2;
+      const cy = head.y * cell + cell / 2;
+      const forward = direction;
+      const side = { x: -forward.y, y: forward.x };
+      ctx.fillStyle = "#12313a";
+      for (const offset of [-1, 1]) {
+        const eyeX = cx + forward.x * 5 + side.x * offset * 5;
+        const eyeY = cy + forward.y * 5 + side.y * offset * 5;
+        ctx.beginPath();
+        ctx.arc(eyeX, eyeY, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function frame(time) {
+      const frameDelta = lastFrameTime ? Math.min(time - lastFrameTime, 100) : 0;
+      lastFrameTime = time;
+      if (state === "playing") {
+        activeGameTime += frameDelta;
+        updateBonusTimers();
+        updateObstacles();
+        updateExplosions();
+        updatePortalTimers();
+        updatePingPongBall(frameDelta);
+        updateArcadeVisitor(frameDelta);
+        const effectiveStepDuration = stepDuration * (
+          speedEffect?.type === "slow" ? 1.5 : speedEffect?.type === "fast" ? 0.7 : 1
+        );
+        if (!lastStep) lastStep = time;
+        if (time - lastStep >= effectiveStepDuration) {
+          step();
+          lastStep = time;
+        }
+      } else if (explosions.length) {
+        updateExplosions();
+      }
+      if (food && (state === "ready" || state === "paused")) draw();
+      else if (state === "playing" && (
+        bonusFruit || speedEffect || obstacles.length || portalState !== "closed"
+        || pingPongBalls.length || arcadeVisitor
+      )) draw();
+      else if (explosions.length) draw();
+      requestAnimationFrame(frame);
+    }
+
+    startButton.addEventListener("click", () => {
+      if (state === "paused") togglePause();
+      else startGame();
+    });
+    pauseButton.addEventListener("click", togglePause);
+    trackButton.addEventListener("click", cycleSong);
+    musicButton.addEventListener("click", () => {
+      musicEnabled = !musicEnabled;
+      musicButton.setAttribute("aria-pressed", String(musicEnabled));
+      musicButton.textContent = `${musicEnabled ? "♫" : "♪"} Musikk: ${musicEnabled ? "på" : "av"}`;
+      musicButton.title = musicEnabled ? "Skru av musikken" : "Skru på musikken";
+      syncMusic();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const directionName = keyDirections[event.key];
+      if (directionName) {
+        event.preventDefault();
+        setDirection(directionName);
+      } else if (event.code === "Space") {
+        event.preventDefault();
+        if (state === "ready" || state === "over") startGame();
+        else togglePause();
+      } else if (event.key === "Enter" && (state === "ready" || state === "over")) {
+        startGame();
+      } else if (event.key === "Escape" && (state === "playing" || state === "paused")) {
+        togglePause();
+      }
+    });
+
+    document.querySelectorAll("[data-direction]").forEach((button) => {
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        setDirection(button.dataset.direction);
+      });
+    });
+
+    canvas.addEventListener("pointerdown", (event) => {
+      touchStart = { x: event.clientX, y: event.clientY };
+    });
+    canvas.addEventListener("pointerup", (event) => {
+      if (!touchStart) return;
+      const deltaX = event.clientX - touchStart.x;
+      const deltaY = event.clientY - touchStart.y;
+      touchStart = null;
+      if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 18) return;
+      setDirection(
+        Math.abs(deltaX) > Math.abs(deltaY)
+          ? deltaX > 0 ? "right" : "left"
+          : deltaY > 0 ? "down" : "up",
+      );
+    });
+
+    resetGame();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
